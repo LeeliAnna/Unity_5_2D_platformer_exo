@@ -1,17 +1,15 @@
+using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(Rigidbody2D))]
-[RequireComponent(typeof(BoxCollider2D))]
-public class LuigiMove : MonoBehaviour
+public class MoveHero : MonoBehaviour
 {
     [SerializeField] private InputActionAsset actions;
-    [SerializeField] private float speed = 1f;
-    [SerializeField] private bool goRight = true;
-    [SerializeField] private float jumpForce = 50f;
-
+    [SerializeField] private float speed;
+    [SerializeField] private float jumpForce;
     private InputAction xAxis;
     private SpriteRenderer spriteRenderer;
     private Animator animator;
@@ -20,7 +18,8 @@ public class LuigiMove : MonoBehaviour
     private bool isCrouching = false;
 
 
-    private void Awake()
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Awake()
     {
         xAxis = actions.FindActionMap("ControlerActionMap").FindAction("XAxis");
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -28,19 +27,19 @@ public class LuigiMove : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
-    void OnEnable()
+    private void OnEnable()
     {
         actions.FindActionMap("ControlerActionMap").Enable();
-        actions.FindActionMap("ControlerActionMap").FindAction("jump").performed += OnJump;
+        actions.FindActionMap("ControlerActionMap").FindAction("Jump").performed += OnJump;
         actions.FindActionMap("ControlerActionMap").FindAction("Crouch").performed += OnCrouch;
         actions.FindActionMap("ControlerActionMap").FindAction("Crouch").canceled += OnRise;
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
         actions.FindActionMap("ControlerActionMap").Disable();
-        actions.FindActionMap("ControlerActionMap").FindAction("jump").performed -= OnJump;
-        actions.FindActionMap("ControlerActionMap").FindAction("Crouch").canceled -= OnCrouch;
+        actions.FindActionMap("ControlerActionMap").FindAction("Jump").performed -= OnJump;
+        actions.FindActionMap("ControlerActionMap").FindAction("Crouch").performed -= OnCrouch;
         actions.FindActionMap("ControlerActionMap").FindAction("Crouch").canceled -= OnRise;
     }
 
@@ -48,18 +47,14 @@ public class LuigiMove : MonoBehaviour
     void Update()
     {
         MoveX();
-
-        Vector3 origin = transform.position + 0.4f * Vector3.down * (goRight ? 1f : -1f);
-        Vector3 direction = Vector3.down;
-
-        RaycastHit2D bellowHit = Physics2D.Raycast(origin, direction, 0.5f);
-        Debug.DrawRay(origin, direction * 0.4f, Color.orange);
-
-        // faire un raycast
-        if (bellowHit.collider == null)
+        if (isJumping)
         {
-            isJumping = false;
-            animator.SetBool("onJump", false);
+            // donne vitesse linéaire en Y
+            if (rb.linearVelocityY < 0)
+            {
+                isJumping = false;
+                animator.SetBool("onJump", false);
+            }
         }
     }
 
@@ -70,7 +65,6 @@ public class LuigiMove : MonoBehaviour
         animator.SetFloat("speed", Mathf.Abs(xAxis.ReadValue<float>()));
         transform.Translate(xAxis.ReadValue<float>() * speed * Time.deltaTime, 0f, 0f);
     }
-
     private void OnJump(InputAction.CallbackContext context)
     {
         rb.AddForce(Vector3.up * jumpForce);
@@ -80,8 +74,8 @@ public class LuigiMove : MonoBehaviour
 
     private void OnCrouch(InputAction.CallbackContext context)
     {
-        animator.SetBool("onCrouch", true);
         isCrouching = true;
+        animator.SetBool("onCrouch", true);
     }
 
     private void OnRise(InputAction.CallbackContext context)
@@ -89,6 +83,4 @@ public class LuigiMove : MonoBehaviour
         isCrouching = false;
         animator.SetBool("onCrouch", false);
     }
-
-
 }
